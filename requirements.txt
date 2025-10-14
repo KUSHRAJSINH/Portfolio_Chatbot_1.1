@@ -9,5 +9,6 @@ langchain-community
 langchain-groq
 # Removed: huggingface-hub and sentence-transformers
 langchain-huggingface # <-- NEW: Recommended package for HuggingFace embeddings
+sentence-transformers
 pypdf
 faiss-cpu
