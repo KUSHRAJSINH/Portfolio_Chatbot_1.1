@@ -65,7 +65,8 @@ def create_rag_chain():
     # --- CHANGE START ---
     # Using the updated class from langchain_huggingface
     embeddings = HuggingFaceEmbeddings(
-        model_name="BAAI/bge-small-en",
+        #model_name="BAAI/bge-small-en",
+        model_name="sentence-transformers/all-MiniLM-L6-v2",
         model_kwargs={"device": "cpu"},
         encode_kwargs={"normalize_embeddings": True}
     )
