@@ -1,0 +1,15 @@
+fastapi
+uvicorn
+gunicorn
+python-dotenv
+pydantic
+langchain
+langchain-core
+langchain-community
+langchain-groq
+# For embeddings
+huggingface-hub
+sentence-transformers
+# For PDF loading
+pypdf
+faiss-cpu
