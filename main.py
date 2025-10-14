@@ -5,7 +5,12 @@ from pydantic import BaseModel
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
-from langchain_community.embeddings import HuggingFaceBgeEmbeddings
+# --- CHANGE START ---
+# The deprecated import:
+# from langchain_community.embeddings import HuggingFaceBgeEmbeddings
+# The recommended, updated import:
+from langchain_huggingface import HuggingFaceEmbeddings # This is the key fix
+# --- CHANGE END ---
 from langchain.memory import ConversationBufferMemory
 from langchain.chains import ConversationalRetrievalChain
 from langchain_groq import ChatGroq
@@ -23,15 +28,17 @@ SESSION_MEMORY = {}  # Session-based memory
 # --- FastAPI Setup ---
 app = FastAPI(title="RAG Portfolio API")
 
-# --- CORS Configuration for Local Dev ---
+# --- CORS Configuration ---
 origins = [
-    "http://localhost:5173",    # React dev server
-    "http://127.0.0.1:5173",    # Alternative localhost
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    # Replace with your frontend domain after deployment
+    # "https://your-portfolio.vercel.app",
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,      # Only local React frontend for now
+    allow_origins=origins,      # Specific domains only
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -40,26 +47,29 @@ app.add_middleware(
 # --- Pydantic model ---
 class Query(BaseModel):
     question: str
-    session_id: str  # Unique ID from frontend
+    session_id: str
 
 # --- RAG Chain Initialization ---
 def create_rag_chain():
     """Initialize FAISS vector store, embeddings, LLM, and prompt template."""
     if not os.path.exists(PDF_FILE_PATH):
         raise FileNotFoundError(f"PDF not found at: {PDF_FILE_PATH}")
-    
-    # Load and split document
+
+    # Load and split PDF
     loader = PyPDFLoader(PDF_FILE_PATH)
     pages = loader.load()
     splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
     chunks = splitter.split_documents(pages)
 
     # Embeddings and vectorstore
-    embeddings = HuggingFaceBgeEmbeddings(
+    # --- CHANGE START ---
+    # Using the updated class from langchain_huggingface
+    embeddings = HuggingFaceEmbeddings(
         model_name="BAAI/bge-small-en",
         model_kwargs={"device": "cpu"},
         encode_kwargs={"normalize_embeddings": True}
     )
+    # --- CHANGE END ---
     vectorstore = FAISS.from_documents(chunks, embeddings)
     retriever = vectorstore.as_retriever()
 
@@ -69,13 +79,16 @@ def create_rag_chain():
         groq_api_key=GROQ_API_KEY,
         streaming=False
     )
-
-    system_prompt = """You are Portfolio AI Assistant for Kushrajsinh Zala.
-Provide brief, professional answers based ONLY on the documents.
-- Maximum 3 sentences per turn
-- Use bullet points for lists
-- Projects: list titles only, end response with: "For detailed info, view the Portfolio section, then ask about a project by name."
-- Other questions outside portfolio: politely say answer not available."""
+    system_prompt = """
+    You are Portfolio AI Assistant for Kushrajsinh Zala.  
+    - Answer briefly (max 3 sentences).  
+    - Use bullets for lists.  
+    - Projects: list titles only; if asked for details, reply: "Please visit the Portfolio section and provide the project name for details."  
+    - Work Experience: always show Petpooja first, then Zidio Development.  
+    - Education: show University first, then School.  
+    - If info not found in documents or vector DB, reply: "I don't know."  
+    - Questions outside portfolio: reply politely, "Answer not available."  
+    """
 
     prompt_template = PromptTemplate(
         input_variables=["chat_history", "context", "question"],
@@ -119,7 +132,7 @@ def get_session_chain(session_id):
 async def ask_question(query: Query):
     if not llm:
         raise HTTPException(status_code=500, detail="RAG failed to initialize. Check PDF/API key.")
-    
+
     chain = get_session_chain(query.session_id)
     try:
         response = chain.invoke({"question": query.question})
