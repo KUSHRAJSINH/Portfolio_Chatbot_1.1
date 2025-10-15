@@ -9,5 +9,4 @@ langchain-community
 langchain-groq
 langchain-huggingface
 sentence-transformers
-pypdf
 faiss-cpu
