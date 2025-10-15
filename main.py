@@ -21,12 +21,12 @@ SESSION_MEMORY = {}
 # --- FastAPI Setup ---
 app = FastAPI(title="RAG Portfolio API")
 
-# --- CORS Configuration ---
+# --- CORS Configuration (CORRECTED) ---
 origins = [
     "http://localhost:5173",
-    "http://127.0.0.0.1:5173",
-    "https://portfolio-v5-1-1.vercel.app/",
-    "https://portfolio-chatbot-1-1.onrender.com/",
+    "http://127.0.0.1:5173", # Corrected loopback IP
+    "https://portfolio-v5-1-1.vercel.app", # Removed trailing slash
+    "https://portfolio-chatbot-1-1.onrender.com", # Removed trailing slash
 ]
 
 app.add_middleware(
@@ -50,9 +50,8 @@ def create_rag_chain():
         raise FileNotFoundError(f"FATAL: Pre-built FAISS index not found at: {FAISS_INDEX_PATH}. The 'faiss_index' folder must be present.")
 
     # Embeddings and vectorstore
-    # --- UPDATED MODEL NAME ---
     embeddings = HuggingFaceEmbeddings(
-        model_name="BAAI/bge-small-en-v1.5", # Changed to BGE-small for better semantic retrieval
+        model_name="BAAI/bge-small-en-v1.5", 
         model_kwargs={"device": "cpu"},
         encode_kwargs={"normalize_embeddings": True}
     )
@@ -63,8 +62,7 @@ def create_rag_chain():
         allow_dangerous_deserialization=True
     )
     
-    # --- UPDATED RETRIEVER SETTINGS ---
-    # Retrieve 6 chunks instead of the default (usually 4) to ensure more context is included
+    # Retrieve 6 chunks for better context
     retriever = vectorstore.as_retriever(search_kwargs={"k": 6}) 
 
     # LLM and prompt template
