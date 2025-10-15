@@ -25,7 +25,8 @@ app = FastAPI(title="RAG Portfolio API")
 origins = [
     "http://localhost:5173",
     "http://127.0.0.0.1:5173",
-    # "https://your-portfolio.vercel.app",
+    "https://portfolio-v5-1-1.vercel.app/",
+    "https://portfolio-chatbot-1-1.onrender.com/",
 ]
 
 app.add_middleware(
